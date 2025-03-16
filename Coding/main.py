@@ -7,7 +7,7 @@ start_day = "1998-10-01"
 end_day = "2024-09-30"
 file_path = 'C:/Python/DamOperation/'
 
-mode_JA = 1
+mode_JA = 2
 mode_DH = 1
 mode_SJG = 1
 
