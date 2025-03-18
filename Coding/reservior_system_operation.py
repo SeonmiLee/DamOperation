@@ -10,7 +10,7 @@ from DH_Operation import *
 from SJG_Operation import *
 
 
-
+# 저수지 연계운영 함수
 def reservior_system_operation(start_day, end_day, 
                                mode, mode_JA, mode_DH, mode_SJG, 
                                RawInflow_JA, RawInflow_JJ, RawInflow_DH, RawInflow_SJG, 
@@ -28,13 +28,14 @@ def reservior_system_operation(start_day, end_day,
     print(days)
 
     Date = RawInflow_JA['Date']
-        
+    # 유입량 자료 단위변환
     Inflow_JA = RawInflow_JA['Inflow'] * timecon
     Inflow_JJ = RawInflow_JJ['Inflow'] * timecon
     Inflow_DH = RawInflow_DH['Inflow'] * timecon
     Inflow_SJG = RawInflow_SJG['Inflow'] * timecon
     LateralInflow = RawInflow_SJG['Inflow'] * timecon
-
+                                 
+    # 저수지 제원 입력
     NHSTO_JA = np.interp(Char_JA['NHWL'], WLSTO_JA['WL'],  WLSTO_JA['STO'])
     RSTO_JA = np.interp(Char_JA['RWL'], WLSTO_JA['WL'],  WLSTO_JA['STO'])
     LSTO_JA = np.interp(Char_JA['LWL'], WLSTO_JA['WL'],  WLSTO_JA['STO'])
@@ -101,11 +102,8 @@ def reservior_system_operation(start_day, end_day,
     Max_DA = Max_DA * timecon
     
 
-
+    # 저수지 운영
     for i in range(days):
-        Year = Date[i].year
-        Month = Date[i].month
-        Day = Date[i].day
 
         #주암, 조절지, 섬진강댐 홍수기 제한수위 설정           
         if (Date[i].month == 6 and Date[i].day >= 21) or (Date[i].month in [7, 8]) or (Date[i].month == 9 and Date[i].day <= 20):
