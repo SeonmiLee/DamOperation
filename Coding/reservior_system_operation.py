@@ -1,4 +1,4 @@
-#%%
+#%% Import Function
 import numpy as np
 import pandas as pd
 
@@ -9,15 +9,16 @@ from JAJJ_Operation import *
 from DH_Operation import *
 from SJG_Operation import *
 
-#%%
+
 
 def reservior_system_operation(start_day, end_day, 
-                               mode_JA, mode_DH, mode_SJG, 
+                               mode, mode_JA, mode_DH, mode_SJG, 
                                RawInflow_JA, RawInflow_JJ, RawInflow_DH, RawInflow_SJG, 
                                WLSTO_JA, WLSTO_JJ, WLSTO_DH, WLSTO_SJG,
                                Char_JA, Char_JJ, Char_DH, Char_SJG,
                                MonthlyIntake_JA, MonthlyStream_JA, MonthlyDemand_JJ, MonthlyDemand_DH, MonthlyIntake_SJG, MonthlyStream_SJG,
-                               RuleCurve_JAJJ, RuleCurve_DH, RuleCurve_SJG):
+                               RuleCurve_JAJJ, RuleCurve_DH, RuleCurve_SJG,
+                               LateralInflow, Max_DA):
 
     timecon = 24*3600/1000000
 
@@ -32,6 +33,7 @@ def reservior_system_operation(start_day, end_day,
     Inflow_JJ = RawInflow_JJ['Inflow'] * timecon
     Inflow_DH = RawInflow_DH['Inflow'] * timecon
     Inflow_SJG = RawInflow_SJG['Inflow'] * timecon
+    LateralInflow = RawInflow_SJG['Inflow'] * timecon
 
     NHSTO_JA = np.interp(Char_JA['NHWL'], WLSTO_JA['WL'],  WLSTO_JA['STO'])
     RSTO_JA = np.interp(Char_JA['RWL'], WLSTO_JA['WL'],  WLSTO_JA['STO'])
@@ -94,6 +96,9 @@ def reservior_system_operation(start_day, end_day,
     prev_State_JA = None
     prev_State_DH = None
     prev_State_SJG = None
+
+    result_Stream = {"Flow_SJ" : np.zeros(days), "DA_Intake" : np.zeros(days), "Stream_flow" : np.zeros(days)}
+    Max_DA = Max_DA * timecon
     
 
 
@@ -101,7 +106,6 @@ def reservior_system_operation(start_day, end_day,
         Year = Date[i].year
         Month = Date[i].month
         Day = Date[i].day
-        print(Year, Month, Day)
 
         #주암, 조절지, 섬진강댐 홍수기 제한수위 설정           
         if (Date[i].month == 6 and Date[i].day >= 21) or (Date[i].month in [7, 8]) or (Date[i].month == 9 and Date[i].day <= 20):
@@ -177,9 +181,30 @@ def reservior_system_operation(start_day, end_day,
 
         [result_SJG["STO_SJG"][i+1], result_SJG["WL_SJG"][i+1], result_SJG["Supply_SJGStream"][i], result_SJG["Supply_SJGIntake"][i], result_SJG["Sp_SJG"][i]] = SJG_Operation(WLSTO_SJG, Inflow_SJG[i], result_SJG["STO_SJG"][i], result_SJG["MAX_SJG"][i], result_SJG["MIN_SJG"][i], result_SJG["Demand_SJGIntake"][i], result_SJG["Demand_SJGStream"][i])
 
+        # 하류유량, 다압취수량 모의
+        if mode == 0:
+            # 1. 송정관측소
+            result_Stream["Flow_SJ"][i] = result_SJG["Supply_SJGStream"][i] + result_JAJJ["Supply_JAStream"][i]
+            #2. 다압취수장 취수가능량 모의
+            if result_Stream["Flow_SJ"][i] >= Max_DA:
+                result_Stream["DA_Intake"][i] = Max_DA
+            else:
+                result_Stream["DA_Intake"][i] = 0
+                # 3. 다압취수장 하류 유량 모의
+            result_Stream["Stream_flow"][i] = result_Stream["Flow_SJ"][i] - result_Stream["DA_Intake"][i]
+        elif mode == 1:
+            # 1. 송정관측소
+            result_Stream["Flow_SJ"][i] = result_SJG["Supply_SJGStream"][i] + result_JAJJ["Supply_JAStream"][i] + result_DH["Supply_DH"][i] + LateralInflow[i]
+            # 2. 다압취수장 취수가능량 모의
+            if result_Stream["Flow_SJ"][i] >= Max_DA:
+                result_Stream["DA_Intake"][i] = Max_DA
+            else:
+                result_Stream["DA_Intake"][i] = 0
+            # 3. 다압취수장 하류 유량 모의
+            result_Stream["Stream_flow"][i] = result_Stream["Flow_SJ"][i] - result_Stream["DA_Intake"][i]    
 
 
-    return result_JAJJ, result_DH, result_SJG, days
+    return result_JAJJ, result_DH, result_SJG, result_Stream, days
 
 
 
