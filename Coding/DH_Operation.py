@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-
+# DH Operation
 def DH_Operation(WLSTO_DH, Inflow_DH, STO_DH, NHSTO_DH, LSTO_DH, Demand_DH):
 
     if STO_DH+Inflow_DH-Demand_DH >= NHSTO_DH:
@@ -12,7 +12,7 @@ def DH_Operation(WLSTO_DH, Inflow_DH, STO_DH, NHSTO_DH, LSTO_DH, Demand_DH):
     else:
         Supply_DH = Demand_DH
         Sp_DH = 0
-
+    # 다음 타임 저류량
     STO_DH = STO_DH + Inflow_DH - Supply_DH - Sp_DH
     WL_DH = np.interp(STO_DH, WLSTO_DH['STO'], WLSTO_DH['WL'])
 
